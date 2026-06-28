@@ -7,6 +7,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: ${JPA_HIBERNATE_DDL_AUTO}
     show-sql: ${JPA_SHOW_SQL}
