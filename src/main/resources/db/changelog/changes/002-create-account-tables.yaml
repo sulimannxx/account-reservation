@@ -1,0 +1,132 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-pgcrypto-extension
+      author: yurii.sulyma
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  - changeSet:
+      id: 002-create-account-status-table
+      author: yurii.sulyma
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: account_status
+      changes:
+        - createTable:
+            tableName: account_status
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_account_status
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_account_status_name
+              - column:
+                  name: description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002-create-client-table
+      author: yurii.sulyma
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: client
+      changes:
+        - createTable:
+            tableName: client
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_client
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: varchar(255)
+              - column:
+                  name: citizenship
+                  type: varchar(128)
+              - column:
+                  name: client_type
+                  type: varchar(64)
+              - column:
+                  name: document_number
+                  type: varchar(64)
+              - column:
+                  name: document_series
+                  type: varchar(64)
+              - column:
+                  name: document_type
+                  type: varchar(64)
+              - column:
+                  name: mdm_code
+                  type: bigint
+
+  - changeSet:
+      id: 002-create-account-table
+      author: yurii.sulyma
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: account
+      changes:
+        - createTable:
+            tableName: account
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_account
+                    nullable: false
+              - column:
+                  name: status_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_type
+                  type: varchar(64)
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+        - addForeignKeyConstraint:
+            baseTableName: account
+            baseColumnNames: status_id
+            constraintName: fk_account_status
+            referencedTableName: account_status
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: account
+            baseColumnNames: client_id
+            constraintName: fk_account_client
+            referencedTableName: client
+            referencedColumnNames: id

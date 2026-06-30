@@ -1,24 +1,255 @@
-# Compiled class file
+# =========================================================
+# Maven
+# =========================================================
+
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Не игнорировать Maven Wrapper
+!.mvn/wrapper/maven-wrapper.jar
+!mvnw
+!mvnw.cmd
+
+
+# =========================================================
+# Java
+# =========================================================
+
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
-*.nar
 *.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+*.nar
 hs_err_pid*
 replay_pid*
+
+
+# =========================================================
+# IntelliJ IDEA
+# =========================================================
+
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Локальные настройки запуска
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# HTTP Client
+.idea/httpRequests/
+http-client.private.env.json
+
+
+# =========================================================
+# VS Code
+# =========================================================
+
+.vscode/
+
+
+# =========================================================
+# Eclipse
+# =========================================================
+
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+
+
+# =========================================================
+# NetBeans
+# =========================================================
+
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+
+# =========================================================
+# Spring Boot
+# =========================================================
+
+spring.log
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# Файлы с локальными настройками и секретами
+application-secret.properties
+application-secret.yml
+application-secret.yaml
+
+
+# =========================================================
+# Environment variables and secrets
+# =========================================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+secrets/
+secret/
+credentials/
+
+
+# =========================================================
+# Logs
+# =========================================================
+
+logs/
+log/
+*.log
+*.log.*
+*.out
+
+
+# =========================================================
+# Temporary files
+# =========================================================
+
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+*~
+
+
+# =========================================================
+# macOS
+# =========================================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+
+# =========================================================
+# Windows
+# =========================================================
+
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+
+# =========================================================
+# Linux
+# =========================================================
+
+*~
+.directory
+.Trash-*
+
+
+# =========================================================
+# Database local files
+# =========================================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+*.mv.db
+*.trace.db
+
+data/
+postgres-data/
+pgdata/
+
+
+# =========================================================
+# Docker local overrides
+# =========================================================
+
+docker-compose.override.yml
+compose.override.yml
+
+
+# =========================================================
+# Test reports and coverage
+# =========================================================
+
+coverage/
+jacoco.exec
+*.exec
+surefire-reports/
+failsafe-reports/
+allure-results/
+allure-report/
+
+
+# =========================================================
+# Build tools
+# =========================================================
+
+.gradle/
+build/
+.gradle-cache/
+
+
+# =========================================================
+# Node.js
+# Если в проекте есть frontend
+# =========================================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.pnpm-store/
+dist/
+
+
+# =========================================================
+# Local generated files
+# =========================================================
+
+generated/
+generated-sources/
+generated-test-sources/

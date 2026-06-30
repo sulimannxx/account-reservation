@@ -1,0 +1,8 @@
+package org.example.accountreservation.repository;
+
+import java.util.UUID;
+import org.example.accountreservation.entity.Account;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AccountRepository extends JpaRepository<Account, UUID> {
+}
