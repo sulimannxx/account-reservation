@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-fill-account-statuses
+      author: yurii.sulyma
+      runAlways: true
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              INSERT INTO account_status (name, description)
+              VALUES
+                  ('NEW', 'Account created in the database'),
+                  ('IN_CREATION', 'Account creation request sent to the external system'),
+                  ('CREATED', 'Account created in the external system'),
+                  ('CANCELLED', 'Account cancelled'),
+                  ('CLOSED', 'Account closed')
+              ON CONFLICT (name) DO UPDATE
+              SET description = EXCLUDED.description;
