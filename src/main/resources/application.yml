@@ -21,6 +21,14 @@ spring:
 server:
   port: ${SERVER_PORT}
 
+management:
+  server:
+    port: ${ACTUATOR_SERVER_PORT}
+  endpoints:
+    web:
+       exposure:
+        include: health, threadDump
+
 logging:
   level:
     root: ${LOGGING_LEVEL_ROOT}
