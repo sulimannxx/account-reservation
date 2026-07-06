@@ -1,0 +1,391 @@
+openapi: 3.0.3
+info:
+  title: Account Reservation API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: clients
+    description: Client operations
+paths:
+  /clients:
+    post:
+      tags:
+        - clients
+      operationId: createClient
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClientRequest'
+      responses:
+        '201':
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags:
+        - clients
+      operationId: searchClients
+      summary: Search clients
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 200
+            default: 20
+        - name: lastName
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: mdmId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Client search result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /clients/{clientId}:
+    get:
+      tags:
+        - clients
+      operationId: getClient
+      summary: Get client by ID
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Client details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDetailsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - clients
+      operationId: updateClient
+      summary: Update client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Client updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - clients
+      operationId: deleteClient
+      summary: Soft delete client
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '204':
+          description: Client deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /clients/{clientId}/exists:
+    get:
+      tags:
+        - clients
+      operationId: clientExists
+      summary: Check client existence
+      parameters:
+        - $ref: '#/components/parameters/ClientId'
+      responses:
+        '200':
+          description: Client existence result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientExistsResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Client not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Business conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ClientStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - BLOCKED
+        - DELETED
+    ErrorCode:
+      type: string
+      enum:
+        - INVALID_CLIENT_DATA
+        - CLIENT_MDM_ID_ALREADY_EXISTS
+        - CLIENT_NOT_FOUND
+        - CLIENT_HAS_ACTIVE_ACCOUNTS
+        - INTERNAL_SERVER_ERROR
+    CreateClientRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - mdmId
+        - firstName
+        - lastName
+        - middleName
+      properties:
+        mdmId:
+          type: integer
+          format: int64
+          minimum: 1
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        middleName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        citizenship:
+          type: string
+          maxLength: 128
+        clientType:
+          type: string
+          maxLength: 64
+        documentNumber:
+          type: string
+          maxLength: 64
+        documentSeries:
+          type: string
+          maxLength: 64
+        documentType:
+          type: string
+          maxLength: 64
+    UpdateClientRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - firstName
+        - lastName
+        - middleName
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        middleName:
+          type: string
+          minLength: 1
+          maxLength: 128
+    ClientResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - mdmId
+        - firstName
+        - lastName
+        - middleName
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        mdmId:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        middleName:
+          type: string
+        status:
+          $ref: '#/components/schemas/ClientStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClientDetailsResponse:
+      allOf:
+        - $ref: '#/components/schemas/ClientResponse'
+        - type: object
+          additionalProperties: false
+          required:
+            - hasAccounts
+          properties:
+            hasAccounts:
+              type: boolean
+    ClientSearchItemResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - mdmId
+        - firstName
+        - lastName
+        - middleName
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        mdmId:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        middleName:
+          type: string
+        status:
+          $ref: '#/components/schemas/ClientStatus'
+    PageableResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - pageNumber
+        - pageSize
+        - totalPages
+        - totalElements
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+    ClientSearchResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - content
+        - pageable
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientSearchItemResponse'
+        pageable:
+          $ref: '#/components/schemas/PageableResponse'
+    ClientExistsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - exists
+        - clientId
+      properties:
+        exists:
+          type: boolean
+        clientId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ClientStatus'
+          nullable: true
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - errorCode
+        - errorDescription
+        - statusCode
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        errorDescription:
+          type: string
+        statusCode:
+          type: integer
+          format: int32

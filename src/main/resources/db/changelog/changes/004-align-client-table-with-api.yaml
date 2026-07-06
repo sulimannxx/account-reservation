@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-rename-client-mdm-code-to-mdm-id
+      author: yurii.sulyma
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              DO $$
+              BEGIN
+                  IF EXISTS (
+                      SELECT 1
+                      FROM information_schema.columns
+                      WHERE table_name = 'client'
+                        AND column_name = 'mdm_code'
+                  ) AND NOT EXISTS (
+                      SELECT 1
+                      FROM information_schema.columns
+                      WHERE table_name = 'client'
+                        AND column_name = 'mdm_id'
+                  ) THEN
+                      ALTER TABLE client RENAME COLUMN mdm_code TO mdm_id;
+                  END IF;
+              END $$;
+
+  - changeSet:
+      id: 004-add-client-api-columns
+      author: yurii.sulyma
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS first_name varchar(128);
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS last_name varchar(128);
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS middle_name varchar(128);
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS status varchar(32) NOT NULL DEFAULT 'ACTIVE';
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS created_at timestamp with time zone NOT NULL DEFAULT now();
+              ALTER TABLE client ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone NOT NULL DEFAULT now();
+              UPDATE client
+              SET first_name = full_name
+              WHERE first_name IS NULL
+                AND full_name IS NOT NULL;
