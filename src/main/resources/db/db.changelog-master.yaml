@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changes/002-create-account-tables.yaml
   - include:
       file: db/changelog/changes/003-fill-account-statuses.yaml
+  - include:
+      file: db/changelog/changes/004-align-client-table-with-api.yaml
