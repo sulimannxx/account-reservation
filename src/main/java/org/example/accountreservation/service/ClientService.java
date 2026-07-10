@@ -1,0 +1,138 @@
+package org.example.accountreservation.service;
+
+import lombok.RequiredArgsConstructor;
+import org.example.accountreservation.entity.Client;
+import org.example.accountreservation.enums.AccountStatusCode;
+import org.example.accountreservation.enums.ClientStatus;
+import org.example.accountreservation.exception.ApiException;
+import org.example.accountreservation.generated.model.ClientDetailsResponse;
+import org.example.accountreservation.generated.model.ClientExistsResponse;
+import org.example.accountreservation.generated.model.ClientResponse;
+import org.example.accountreservation.generated.model.ClientSearchResponse;
+import org.example.accountreservation.generated.model.CreateClientRequest;
+import org.example.accountreservation.generated.model.ErrorCode;
+import org.example.accountreservation.generated.model.UpdateClientRequest;
+import org.example.accountreservation.mapper.ClientMapper;
+import org.example.accountreservation.repository.AccountRepository;
+import org.example.accountreservation.repository.ClientRepository;
+import org.example.accountreservation.specification.ClientSpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class ClientService {
+
+    private final ClientRepository clientRepository;
+    private final AccountRepository accountRepository;
+    private final ClientMapper clientMapper;
+
+    @Transactional(readOnly = true)
+    public ClientSearchResponse searchClients(Integer page, Integer size, String lastName, Long mdmId) {
+        validatePageRequest(page, size);
+
+        Page<Client> clients = clientRepository.findAll(
+                ClientSpecifications.byFilters(lastName, mdmId),
+                PageRequest.of(page, size)
+        );
+
+        return clientMapper.toClientSearchResponse(clients);
+    }
+
+    @Transactional(readOnly = true)
+    public ClientExistsResponse clientExists(UUID clientId) {
+        return clientRepository.findById(clientId)
+                .map(clientMapper::toClientExistsResponse)
+                .orElseGet(() -> clientMapper.toClientNotExistsResponse(clientId));
+    }
+
+    @Transactional(readOnly = true)
+    public ClientDetailsResponse getClient(UUID clientId) {
+        return clientMapper.toClientDetailsResponse(getRequiredClient(clientId));
+    }
+
+    @Transactional
+    public void deleteClient(UUID clientId) {
+        Client client = getRequiredClient(clientId);
+
+        if (accountRepository.existsByClient_IdAndStatus_NameIn(clientId, AccountStatusCode.activeNames())) {
+            throw new ApiException(ErrorCode.CLIENT_HAS_ACTIVE_ACCOUNTS);
+        }
+
+        client.setStatus(ClientStatus.DELETED);
+        clientRepository.save(client);
+    }
+
+    @Transactional
+    public ClientResponse updateClient(UUID clientId, UpdateClientRequest request) {
+        validateUpdateRequest(request);
+
+        Client client = getRequiredClient(clientId);
+        client.setFirstName(request.getFirstName());
+        client.setLastName(request.getLastName());
+        client.setMiddleName(request.getMiddleName());
+
+        return clientMapper.toClientResponse(clientRepository.save(client));
+    }
+
+    @Transactional
+    public ClientResponse createClient(CreateClientRequest request) {
+        validateCreateRequest(request);
+
+        if (clientRepository.existsByMdmId(request.getMdmId())) {
+            throw new ApiException(ErrorCode.CLIENT_MDM_ID_ALREADY_EXISTS);
+        }
+
+        Client client = new Client();
+        client.setMdmId(request.getMdmId());
+        client.setFirstName(request.getFirstName());
+        client.setLastName(request.getLastName());
+        client.setMiddleName(request.getMiddleName());
+        client.setCitizenship(request.getCitizenship());
+        client.setClientType(request.getClientType());
+        client.setDocumentNumber(request.getDocumentNumber());
+        client.setDocumentSeries(request.getDocumentSeries());
+        client.setDocumentType(request.getDocumentType());
+        client.setStatus(ClientStatus.ACTIVE);
+
+        return clientMapper.toClientResponse(clientRepository.save(client));
+    }
+
+    private Client getRequiredClient(UUID clientId) {
+        return clientRepository.findById(clientId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CLIENT_NOT_FOUND));
+    }
+
+    private void validateCreateRequest(CreateClientRequest request) {
+        if (request == null
+                || request.getMdmId() == null
+                || request.getMdmId() < 1
+                || hasInvalidName(request.getFirstName(), request.getLastName(), request.getMiddleName())) {
+            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
+        }
+    }
+
+    private void validateUpdateRequest(UpdateClientRequest request) {
+        if (request == null || hasInvalidName(request.getFirstName(), request.getLastName(), request.getMiddleName())) {
+            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
+        }
+    }
+
+    private void validatePageRequest(Integer page, Integer size) {
+        if (page == null || page < 0 || size == null || size < 1 || size > 200) {
+            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
+        }
+    }
+
+    private boolean hasInvalidName(String firstName, String lastName, String middleName) {
+        return isBlank(firstName) || isBlank(lastName) || isBlank(middleName);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+}
