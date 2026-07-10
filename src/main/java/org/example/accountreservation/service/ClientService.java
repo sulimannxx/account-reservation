@@ -72,9 +72,7 @@ public class ClientService {
         validateUpdateRequest(request);
 
         Client client = getRequiredClient(clientId);
-        client.setFirstName(request.getFirstName());
-        client.setLastName(request.getLastName());
-        client.setMiddleName(request.getMiddleName());
+        clientMapper.updateClient(request, client);
 
         return clientMapper.toClientResponse(clientRepository.save(client));
     }
@@ -87,16 +85,7 @@ public class ClientService {
             throw new ApiException(ErrorCode.CLIENT_MDM_ID_ALREADY_EXISTS);
         }
 
-        Client client = new Client();
-        client.setMdmId(request.getMdmId());
-        client.setFirstName(request.getFirstName());
-        client.setLastName(request.getLastName());
-        client.setMiddleName(request.getMiddleName());
-        client.setCitizenship(request.getCitizenship());
-        client.setClientType(request.getClientType());
-        client.setDocumentNumber(request.getDocumentNumber());
-        client.setDocumentSeries(request.getDocumentSeries());
-        client.setDocumentType(request.getDocumentType());
+        Client client = clientMapper.toClient(request);
         client.setStatus(ClientStatus.ACTIVE);
 
         return clientMapper.toClientResponse(clientRepository.save(client));

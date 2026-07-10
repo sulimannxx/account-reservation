@@ -7,9 +7,13 @@ import org.example.accountreservation.generated.model.ClientExistsResponse;
 import org.example.accountreservation.generated.model.ClientResponse;
 import org.example.accountreservation.generated.model.ClientSearchItemResponse;
 import org.example.accountreservation.generated.model.ClientSearchResponse;
+import org.example.accountreservation.generated.model.CreateClientRequest;
 import org.example.accountreservation.generated.model.PageableResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.example.accountreservation.generated.model.UpdateClientRequest;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -17,49 +21,37 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
-@Component
-public class ClientMapper {
+@Mapper(componentModel = "spring")
+public interface ClientMapper {
 
-    public ClientResponse toClientResponse(Client client) {
-        return new ClientResponse(
-                client.getId(),
-                client.getMdmId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getMiddleName(),
-                toApiStatus(client.getStatus()),
-                toOffsetDateTime(client.getCreatedAt()),
-                toOffsetDateTime(client.getUpdatedAt())
-        );
-    }
+    ClientResponse toClientResponse(Client client);
 
-    public ClientDetailsResponse toClientDetailsResponse(Client client) {
-        return new ClientDetailsResponse(
-                client.getId(),
-                client.getMdmId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getMiddleName(),
-                toApiStatus(client.getStatus()),
-                toOffsetDateTime(client.getCreatedAt()),
-                toOffsetDateTime(client.getUpdatedAt()),
-                false
-        );
-    }
+    @Mapping(target = "hasAccounts", constant = "false")
+    ClientDetailsResponse toClientDetailsResponse(Client client);
 
-    public ClientExistsResponse toClientExistsResponse(Client client) {
-        return new ClientExistsResponse(true, client.getId()).status(toApiStatus(client.getStatus()));
-    }
+    @Mapping(target = "exists", constant = "true")
+    @Mapping(target = "clientId", source = "id")
+    ClientExistsResponse toClientExistsResponse(Client client);
 
-    public ClientExistsResponse toClientNotExistsResponse(UUID clientId) {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    Client toClient(CreateClientRequest request);
+
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "firstName", source = "firstName")
+    @Mapping(target = "lastName", source = "lastName")
+    @Mapping(target = "middleName", source = "middleName")
+    void updateClient(UpdateClientRequest request, @MappingTarget Client client);
+
+    List<ClientSearchItemResponse> toClientSearchItemResponses(List<Client> clients);
+
+    default ClientExistsResponse toClientNotExistsResponse(UUID clientId) {
         return new ClientExistsResponse(false, clientId);
     }
 
-    public ClientSearchResponse toClientSearchResponse(Page<Client> clients) {
-        List<ClientSearchItemResponse> content = clients.getContent().stream()
-                .map(this::toClientSearchItemResponse)
-                .toList();
-
+    default ClientSearchResponse toClientSearchResponse(org.springframework.data.domain.Page<Client> clients) {
         PageableResponse pageable = new PageableResponse(
                 clients.getNumber(),
                 clients.getSize(),
@@ -67,27 +59,16 @@ public class ClientMapper {
                 clients.getTotalElements()
         );
 
-        return new ClientSearchResponse(content, pageable);
+        return new ClientSearchResponse(toClientSearchItemResponses(clients.getContent()), pageable);
     }
 
-    private ClientSearchItemResponse toClientSearchItemResponse(Client client) {
-        return new ClientSearchItemResponse(
-                client.getId(),
-                client.getMdmId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getMiddleName(),
-                toApiStatus(client.getStatus())
-        );
-    }
-
-    private org.example.accountreservation.generated.model.ClientStatus toApiStatus(ClientStatus status) {
+    default org.example.accountreservation.generated.model.ClientStatus toApiStatus(ClientStatus status) {
         return status == null
                 ? null
                 : org.example.accountreservation.generated.model.ClientStatus.fromValue(status.name());
     }
 
-    private OffsetDateTime toOffsetDateTime(Instant instant) {
+    default OffsetDateTime toOffsetDateTime(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }

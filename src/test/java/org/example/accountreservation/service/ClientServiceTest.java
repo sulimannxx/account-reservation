@@ -13,6 +13,7 @@ import org.example.accountreservation.repository.ClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -46,7 +47,7 @@ class ClientServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientService = new ClientService(clientRepository, accountRepository, new ClientMapper());
+        clientService = new ClientService(clientRepository, accountRepository, Mappers.getMapper(ClientMapper.class));
     }
 
     @Test
