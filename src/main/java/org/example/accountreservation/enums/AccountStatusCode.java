@@ -1,28 +1,24 @@
 package org.example.accountreservation.enums;
 
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public enum AccountStatusCode {
-    NEW(true),
-    IN_CREATION(true),
-    CREATED(true),
-    CANCELLED(false),
-    CLOSED(false);
+    NEW,
+    IN_CREATION,
+    CREATED,
+    CANCELLED,
+    CLOSED;
 
-    private final boolean active;
-
-    AccountStatusCode(boolean active) {
-        this.active = active;
-    }
+    private static final Set<AccountStatusCode> NOT_ACTIVE_STATUSES = EnumSet.of(CANCELLED, CLOSED);
 
     public boolean isActive() {
-        return active;
+        return !NOT_ACTIVE_STATUSES.contains(this);
     }
 
     public static Set<String> activeNames() {
-        return Arrays.stream(values())
+        return EnumSet.complementOf(EnumSet.copyOf(NOT_ACTIVE_STATUSES)).stream()
                 .filter(AccountStatusCode::isActive)
                 .map(AccountStatusCode::name)
                 .collect(Collectors.toSet());
