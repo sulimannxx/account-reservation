@@ -30,10 +30,11 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final AccountRepository accountRepository;
     private final ClientMapper clientMapper;
+    private final ClientValidationService clientValidationService;
 
     @Transactional(readOnly = true)
     public ClientSearchResponse searchClients(Integer page, Integer size, String lastName, Long mdmId) {
-        validatePageRequest(page, size);
+        clientValidationService.validatePageRequest(page, size);
 
         Page<Client> clients = clientRepository.findAll(
                 ClientSpecifications.byFilters(lastName, mdmId),
@@ -69,7 +70,7 @@ public class ClientService {
 
     @Transactional
     public ClientResponse updateClient(UUID clientId, UpdateClientRequest request) {
-        validateUpdateRequest(request);
+        clientValidationService.validateUpdateRequest(request);
 
         Client client = getRequiredClient(clientId);
         clientMapper.updateClient(request, client);
@@ -79,7 +80,7 @@ public class ClientService {
 
     @Transactional
     public ClientResponse createClient(CreateClientRequest request) {
-        validateCreateRequest(request);
+        clientValidationService.validateCreateRequest(request);
 
         if (clientRepository.existsByMdmId(request.getMdmId())) {
             throw new ApiException(ErrorCode.CLIENT_MDM_ID_ALREADY_EXISTS);
@@ -94,34 +95,5 @@ public class ClientService {
     private Client getRequiredClient(UUID clientId) {
         return clientRepository.findById(clientId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CLIENT_NOT_FOUND));
-    }
-
-    private void validateCreateRequest(CreateClientRequest request) {
-        if (request == null
-                || request.getMdmId() == null
-                || request.getMdmId() < 1
-                || hasInvalidName(request.getFirstName(), request.getLastName(), request.getMiddleName())) {
-            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
-        }
-    }
-
-    private void validateUpdateRequest(UpdateClientRequest request) {
-        if (request == null || hasInvalidName(request.getFirstName(), request.getLastName(), request.getMiddleName())) {
-            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
-        }
-    }
-
-    private void validatePageRequest(Integer page, Integer size) {
-        if (page == null || page < 0 || size == null || size < 1 || size > 200) {
-            throw new ApiException(ErrorCode.INVALID_CLIENT_DATA);
-        }
-    }
-
-    private boolean hasInvalidName(String firstName, String lastName, String middleName) {
-        return isBlank(firstName) || isBlank(lastName) || isBlank(middleName);
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

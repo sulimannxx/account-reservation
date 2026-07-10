@@ -47,7 +47,12 @@ class ClientServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientService = new ClientService(clientRepository, accountRepository, Mappers.getMapper(ClientMapper.class));
+        clientService = new ClientService(
+                clientRepository,
+                accountRepository,
+                Mappers.getMapper(ClientMapper.class),
+                new ClientValidationService()
+        );
     }
 
     @Test
