@@ -4,13 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.example.accountreservation.entity.Client;
 import org.example.accountreservation.enums.AccountStatusCode;
 import org.example.accountreservation.enums.ClientStatus;
+import org.example.accountreservation.exception.ApiError;
 import org.example.accountreservation.exception.ApiException;
 import org.example.accountreservation.generated.model.ClientDetailsResponse;
 import org.example.accountreservation.generated.model.ClientExistsResponse;
 import org.example.accountreservation.generated.model.ClientResponse;
 import org.example.accountreservation.generated.model.ClientSearchResponse;
 import org.example.accountreservation.generated.model.CreateClientRequest;
-import org.example.accountreservation.generated.model.ErrorCode;
 import org.example.accountreservation.generated.model.UpdateClientRequest;
 import org.example.accountreservation.mapper.ClientMapper;
 import org.example.accountreservation.repository.AccountRepository;
@@ -61,7 +61,7 @@ public class ClientService {
         Client client = getRequiredClient(clientId);
 
         if (accountRepository.existsByClient_IdAndStatus_NameIn(clientId, AccountStatusCode.activeNames())) {
-            throw new ApiException(ErrorCode.CLIENT_HAS_ACTIVE_ACCOUNTS);
+            throw new ApiException(ApiError.CLIENT_HAS_ACTIVE_ACCOUNTS);
         }
 
         client.setStatus(ClientStatus.DELETED);
@@ -83,7 +83,7 @@ public class ClientService {
         clientValidationService.validateCreateRequest(request);
 
         if (clientRepository.existsByMdmId(request.getMdmId())) {
-            throw new ApiException(ErrorCode.CLIENT_MDM_ID_ALREADY_EXISTS);
+            throw new ApiException(ApiError.CLIENT_MDM_ID_ALREADY_EXISTS);
         }
 
         Client client = clientMapper.toClient(request);
@@ -94,6 +94,6 @@ public class ClientService {
 
     private Client getRequiredClient(UUID clientId) {
         return clientRepository.findById(clientId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CLIENT_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(ApiError.CLIENT_NOT_FOUND));
     }
 }

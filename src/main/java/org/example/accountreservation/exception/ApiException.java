@@ -4,14 +4,22 @@ import org.example.accountreservation.generated.model.ErrorCode;
 
 public class ApiException extends RuntimeException {
 
-    private final ErrorCode errorCode;
+    private final ApiError apiError;
+
+    public ApiException(ApiError apiError) {
+        super(apiError.getErrorCode().getValue());
+        this.apiError = apiError;
+    }
 
     public ApiException(ErrorCode errorCode) {
-        super(errorCode.getValue());
-        this.errorCode = errorCode;
+        this(ApiError.fromErrorCode(errorCode));
     }
 
     public ErrorCode getErrorCode() {
-        return errorCode;
+        return apiError.getErrorCode();
+    }
+
+    public ApiError getApiErrorCode() {
+        return apiError;
     }
 }
