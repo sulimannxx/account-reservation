@@ -1,17 +1,23 @@
 package org.example.accountreservation.exception;
 
+import lombok.Getter;
 import org.example.accountreservation.generated.model.ErrorCode;
 
 public class ApiException extends RuntimeException {
 
-    private final ErrorCode errorCode;
+    @Getter
+    private final ApiError apiErrorCode;
+
+    public ApiException(ApiError apiErrorCode) {
+        super(apiErrorCode.getErrorCode().getValue());
+        this.apiErrorCode = apiErrorCode;
+    }
 
     public ApiException(ErrorCode errorCode) {
-        super(errorCode.getValue());
-        this.errorCode = errorCode;
+        this(ApiError.fromErrorCode(errorCode));
     }
 
     public ErrorCode getErrorCode() {
-        return errorCode;
+        return apiErrorCode.getErrorCode();
     }
 }

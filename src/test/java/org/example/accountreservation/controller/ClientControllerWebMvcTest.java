@@ -1,28 +1,30 @@
 package org.example.accountreservation.controller;
 
-import org.example.accountreservation.entity.Client;
-import org.example.accountreservation.enums.ClientStatus;
+import org.example.accountreservation.exception.ApiException;
 import org.example.accountreservation.exception.ApiExceptionHandler;
-import org.example.accountreservation.repository.AccountRepository;
-import org.example.accountreservation.repository.ClientRepository;
+import org.example.accountreservation.generated.model.ClientResponse;
+import org.example.accountreservation.generated.model.ClientSearchResponse;
+import org.example.accountreservation.generated.model.ErrorCode;
+import org.example.accountreservation.generated.model.PageableResponse;
+import org.example.accountreservation.service.ClientService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.util.Optional;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.empty;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -43,15 +45,11 @@ class ClientControllerWebMvcTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ClientRepository clientRepository;
-
-    @MockitoBean
-    private AccountRepository accountRepository;
+    private ClientService clientService;
 
     @Test
     void createClientReturnsCreatedResponse() throws Exception {
-        when(clientRepository.existsByMdmId(1234567890L)).thenReturn(false);
-        when(clientRepository.save(any(Client.class))).thenAnswer(invocation -> persistedClient(invocation.getArgument(0)));
+        when(clientService.createClient(any())).thenReturn(clientResponse());
 
         mockMvc.perform(post(API_PREFIX + "/clients")
                         .contextPath(API_PREFIX)
@@ -75,6 +73,8 @@ class ClientControllerWebMvcTest {
 
     @Test
     void createClientReturnsBadRequestForInvalidBody() throws Exception {
+        when(clientService.createClient(any())).thenThrow(new ApiException(ErrorCode.INVALID_CLIENT_DATA));
+
         mockMvc.perform(post(API_PREFIX + "/clients")
                         .contextPath(API_PREFIX)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +93,7 @@ class ClientControllerWebMvcTest {
 
     @Test
     void createClientReturnsConflictForDuplicateMdmId() throws Exception {
-        when(clientRepository.existsByMdmId(1234567890L)).thenReturn(true);
+        when(clientService.createClient(any())).thenThrow(new ApiException(ErrorCode.CLIENT_MDM_ID_ALREADY_EXISTS));
 
         mockMvc.perform(post(API_PREFIX + "/clients")
                         .contextPath(API_PREFIX)
@@ -114,8 +114,8 @@ class ClientControllerWebMvcTest {
 
     @Test
     void searchClientsReturnsEmptyPage() throws Exception {
-        PageRequest pageable = PageRequest.of(0, 20);
-        when(clientRepository.findAll(anyClientSpecification(), eq(pageable))).thenReturn(Page.empty(pageable));
+        when(clientService.searchClients(eq(0), eq(20), eq(null), eq(null)))
+                .thenReturn(new ClientSearchResponse(List.of(), new PageableResponse(0, 20, 0, 0L)));
 
         mockMvc.perform(get(API_PREFIX + "/clients")
                         .contextPath(API_PREFIX)
@@ -128,7 +128,7 @@ class ClientControllerWebMvcTest {
 
     @Test
     void getClientReturnsNotFoundErrorBody() throws Exception {
-        when(clientRepository.findById(CLIENT_ID)).thenReturn(Optional.empty());
+        when(clientService.getClient(CLIENT_ID)).thenThrow(new ApiException(ErrorCode.CLIENT_NOT_FOUND));
 
         mockMvc.perform(get(API_PREFIX + "/clients/{clientId}", CLIENT_ID)
                         .contextPath(API_PREFIX)
@@ -140,8 +140,7 @@ class ClientControllerWebMvcTest {
 
     @Test
     void deleteClientReturnsConflictWhenActiveAccountsExist() throws Exception {
-        when(clientRepository.findById(CLIENT_ID)).thenReturn(Optional.of(client()));
-        when(accountRepository.existsByClient_IdAndStatus_NameIn(eq(CLIENT_ID), any())).thenReturn(true);
+        doThrow(new ApiException(ErrorCode.CLIENT_HAS_ACTIVE_ACCOUNTS)).when(clientService).deleteClient(CLIENT_ID);
 
         mockMvc.perform(delete(API_PREFIX + "/clients/{clientId}", CLIENT_ID)
                         .contextPath(API_PREFIX)
@@ -153,7 +152,7 @@ class ClientControllerWebMvcTest {
 
     @Test
     void unexpectedExceptionReturnsInternalServerErrorBody() throws Exception {
-        when(clientRepository.findById(CLIENT_ID)).thenThrow(new IllegalStateException("database is unavailable"));
+        when(clientService.getClient(CLIENT_ID)).thenThrow(new IllegalStateException("database is unavailable"));
 
         mockMvc.perform(get(API_PREFIX + "/clients/{clientId}", CLIENT_ID)
                         .contextPath(API_PREFIX)
@@ -163,28 +162,17 @@ class ClientControllerWebMvcTest {
                 .andExpect(jsonPath("$.statusCode").value(500));
     }
 
-    private Client persistedClient(Client client) {
-        client.setId(CLIENT_ID);
-        client.setStatus(ClientStatus.ACTIVE);
-        client.setCreatedAt(NOW);
-        client.setUpdatedAt(NOW);
-        return client;
-    }
-
-    private Client client() {
-        Client client = new Client();
-        client.setId(CLIENT_ID);
-        client.setMdmId(1234567890L);
-        client.setFirstName("Ivan");
-        client.setLastName("Petrov");
-        client.setMiddleName("Sergeevich");
-        client.setStatus(ClientStatus.ACTIVE);
-        client.setCreatedAt(NOW);
-        client.setUpdatedAt(NOW);
-        return client;
-    }
-
-    private Specification<Client> anyClientSpecification() {
-        return any();
+    private ClientResponse clientResponse() {
+        OffsetDateTime now = NOW.atOffset(ZoneOffset.UTC);
+        return new ClientResponse(
+                CLIENT_ID,
+                1234567890L,
+                "Ivan",
+                "Petrov",
+                "Sergeevich",
+                org.example.accountreservation.generated.model.ClientStatus.ACTIVE,
+                now,
+                now
+        );
     }
 }
